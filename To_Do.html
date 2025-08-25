@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Do App</title>
+<link rel="stylesheet" href="To_do.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>To-Do List</h2>
+    <div class="task-input">
+        <input type="text" id="taskInput" placeholder="Enter task">
+        <input type="date" id="taskDate">
+        <button onclick="addTask()">Add</button>
+    </div>
+    <div id="taskContainer"></div>
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let lastSelectedDate = localStorage.getItem("lastSelectedDate") || "";
+document.getElementById("taskDate").value = lastSelectedDate;
+
+function saveTasks() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    localStorage.setItem("lastSelectedDate", lastSelectedDate);
+}
+
+function renderTasks() {
+    const container = document.getElementById("taskContainer");
+    container.innerHTML = "";
+
+    const grouped = {};
+    tasks.forEach(task => {
+        const dateOnly = task.date || "No Date";
+        if (!grouped[dateOnly]) grouped[dateOnly] = [];
+        grouped[dateOnly].push(task);
+    });
+
+    const sortedDates = Object.keys(grouped).sort((a, b) => {
+        if (a === "No Date") return 1;
+        if (b === "No Date") return -1;
+        return new Date(a) - new Date(b);
+    });
+
+    sortedDates.forEach(date => {
+        const card = document.createElement("div");
+        card.className = "date-card";
+
+        const header = document.createElement("div");
+        header.className = "date-header";
+        header.textContent = date;
+
+        const list = document.createElement("ul");
+        list.className = "task-list";
+
+        grouped[date].forEach(task => {
+            const li = document.createElement("li");
+            li.className = "task-item";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = task.completed;
+            checkbox.onchange = () => toggleComplete(task);
+
+            const span = document.createElement("span");
+            span.className = "task-text";
+            span.textContent = task.text;
+            if (task.completed) span.classList.add("completed");
+
+            const btns = document.createElement("div");
+            btns.className = "task-buttons";
+
+            const editBtn = document.createElement("button");
+            editBtn.className = "edit-btn";
+            editBtn.textContent = "Edit";
+            editBtn.onclick = () => editTask(task);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.textContent = "Del";
+            deleteBtn.onclick = () => deleteTask(task); 
+
+            btns.appendChild(editBtn);
+            btns.appendChild(deleteBtn);
+
+            li.appendChild(checkbox);
+            li.appendChild(span);
+            li.appendChild(btns);
+            list.appendChild(li);
+        });
+
+        card.appendChild(header);
+        card.appendChild(list);
+        container.appendChild(card);
+    });
+}
+
+function addTask() {
+    const text = document.getElementById("taskInput").value.trim();
+    let date = document.getElementById("taskDate").value;
+
+    if (!text) return alert("Please enter a task!");
+
+    if (!date && lastSelectedDate) {
+        date = lastSelectedDate;
+    }
+
+    if (date) {
+        lastSelectedDate = date;
+    }
+
+    tasks.push({ text, date, completed: false });
+    saveTasks();
+    renderTasks();
+    document.getElementById("taskInput").value = "";
+}
+
+function toggleComplete(task) {
+    task.completed = !task.completed;
+    saveTasks();
+    renderTasks();
+}
+
+function editTask(task) {
+    const newText = prompt("Edit task:", task.text);
+    if (newText !== null) {
+        task.text = newText.trim() || task.text;
+        saveTasks();
+        renderTasks();
+    }
+}
+
+function deleteTask(task) {
+    tasks = tasks.filter(t => t !== task);
+    saveTasks();
+    renderTasks();
+}
+
+renderTasks();
+</script>
+
+</body>
+</html>
